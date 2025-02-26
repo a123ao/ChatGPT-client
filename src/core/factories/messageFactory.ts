@@ -1,14 +1,13 @@
-import type { 
-    MessageRole, 
-    Message
-} from '../types/index.ts';
+import type { MessageAuthor, Message, ImageMeta } from '../types/index.ts';
+import { MessageContentFactory } from './messageContentFactory.ts';
 
 export interface CreateMessageParams {
-    id:         string;
-    data:       string;
-    role:       MessageRole;
-    parent:     null | string;
-    children?:  string[];
+    id:             string;
+    data:           string;
+    role:           MessageAuthor['role'];
+    parent:         string | null;
+    children?:      string[];
+    attachments?:   ImageMeta[];
 }
 
 export class MessageFactory {
@@ -20,7 +19,8 @@ export class MessageFactory {
             message: {
                 id,
                 author: { role },
-                content: { parts: [ data ] },
+                content: MessageContentFactory.createContent(data, params.attachments),
+                metadata: { attachments: params.attachments || [] },
             },
             parent,
             children: params.children || [],

@@ -9,7 +9,8 @@ export const output = async (
     stream:     AsyncGenerator<ResponseStreamParseResult>, 
     options?:   OutputOptions
 ) => {
-    let firstResponse = true;
+    let firstResponse   = true;
+    let inProgress      = false;
     for await (const { meta, part } of stream) {
         if (meta) {
             if (firstResponse) {
@@ -22,11 +23,19 @@ export const output = async (
                 break;
             }
 
-            if (meta.recipient === 'bio') {
-                process.stdout.write(`---Memory Updated---\n`);
-            } else {
-                process.stdout.write(`---Assistant Response---\n`);
+            if (inProgress) {
+                process.stdout.write('\n\n');
             }
+
+            if (meta.recipient === 'bio') {
+                process.stdout.write(`---📘Memory Updating📘---\n`);
+            } else if (meta.message.author.role === 'tool') {
+                process.stdout.write('---💭Assistant Thinking💭---\n');
+            } else {
+                process.stdout.write(`---💬Assistant Response💬---\n`);
+            }
+
+            inProgress = true;
         }
 
         if (part) {

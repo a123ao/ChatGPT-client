@@ -5,7 +5,7 @@ import type {
     SystemMessageMeta, 
     UserMessageMeta, 
     AssistantMessageMeta 
-} from '../types/messages/message.ts';
+} from '../types/messages/index.ts';
 
 // Meta recieved from the server
 export type ResponseMetaType = SystemMessageMeta | UserMessageMeta | AssistantMessageMeta;
@@ -48,7 +48,6 @@ export class ResponseStreamParser {
     public static async *parseV1EncodedStream(stream: ReadableStream<Uint8Array>): AsyncGenerator<ResponseStreamParseResult> {
         let conversationId = '';
         let inProgress  = false; // Indicate if any message is being processed like assistant or memory message
-        let hadProgress = false; // Indicate if any message has been processed
         let previousMessage: Message | null = null;
         let progressingMessage: Message | null  = null;
         const completedMessages: Message[]      = [];
@@ -82,16 +81,10 @@ export class ResponseStreamParser {
                         continue;
                     };
 
-                    if (hadProgress) {
-                        // Jump to the next line if there is a new message
-                        yield { meta: null, part: '\n' };
-                    }
-
                     conversationId = parsedData.v.conversation_id;
 
                     progressingMessage  = completedMessages[completedMessages.length - 1];
                     inProgress          = true;
-                    hadProgress         = true;
                     const recipient     = message.recipient as string;
 
                     const meta = { 
@@ -105,14 +98,14 @@ export class ResponseStreamParser {
                 } else if (parsedData.o === 'patch' && progressingMessage) {
                     for (const patch of parsedData.v as BaseChunk[]) {
                         if (patch.p === '/message/content/parts/0') {
-                            progressingMessage.message.content.parts[0] += patch.v as string;
+                            progressingMessage.message.content.parts![0] += patch.v as string;
 
                             yield { meta: null, part: patch.v as string };
                         }
                     }
                     inProgress = false;
                 } else if (inProgress && progressingMessage) {
-                    progressingMessage.message.content.parts[0] += parsedData.v as string;
+                    progressingMessage.message.content.parts![0] += parsedData.v as string;
                     yield { meta: null, part: parsedData.v as string };
                 }
             } catch (err) {
@@ -132,6 +125,4 @@ export class ResponseStreamParser {
         };
         yield { meta, part: null };
     }
-
-
 }

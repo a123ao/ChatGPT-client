@@ -1,5 +1,5 @@
 import 'jsr:@std/dotenv/load';
-import { ChatGPT } from './core/index.ts';
+import { ChatGPTAPI, ChatGPT } from './core/index.ts';
 import { Conversation, CreateMessageOptions } from './conversation.ts';
 
 export type CreateConversationReturnType = 'message' | 'conversation';
@@ -15,7 +15,7 @@ export class ChatGPTClient {
     private readonly token:     string;
     private readonly cookie:    string;
 
-    private readonly api: ChatGPT;
+    private readonly api: ChatGPTAPI;
 
     constructor({ token, cookie }: { token: string, cookie: string }) {
         if (!token || !cookie) throw new Error('Token and cookie are required');
@@ -45,7 +45,8 @@ export class ChatGPTClient {
     }
 
     public async *createConversationStream(message: string, options?: CreateMessageOptions) {
-        const stream = await this.api.createMessage(message, { ...options });
+        const attachments = await this.api.createAttachments(options?.attachments || []);
+        const stream = await this.api.createMessage(message, { ...options, attachments });
 
         for await (const chunk of stream) {
             yield chunk;

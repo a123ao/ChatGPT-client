@@ -6,7 +6,6 @@ import type {
     BaseMessagePayload, 
     CreateMessagePayload, 
     RecreateMessagePayload, 
-    PayloadMessage 
 } from '../types/index.ts';
 
 export interface BaseCreateMessagePayloadParams {
@@ -14,30 +13,20 @@ export interface BaseCreateMessagePayloadParams {
     parent:             null | string;
     model:              ModelType;
     conversationId?:    string;
-    instructionMeta?:   InstructionMessageMeta
+    instructionMeta?:   InstructionMessageMeta;
+    attachments?:       string[];
 }
 
 export class MessagePayloadFactory {
-    private static createUserMessagePayload(meta: UserMessageMeta): PayloadMessage {
-        return {
-            id:     meta.id,
-            author: { role: 'user' },
-            content: { 
-                content_type:   'text', 
-                parts:          meta.content.parts as string[]
-            },
-        };
-    }
-
     public static createCreateMessagePayload(params: BaseCreateMessagePayloadParams): CreateMessagePayload {
         const payload: CreateMessagePayload = {
             ...this.getDefaultPayload(),
             ...{
                 action:             'next',
-                messages:           [ this.createUserMessagePayload(params.meta) ],
+                messages:           [ params.meta ],
                 parent_message_id:  params.parent,
                 model:              params.model,
-                conversation_id:    params.conversationId
+                conversation_id:    params.conversationId,
             }
         };
 

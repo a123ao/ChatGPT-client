@@ -1,21 +1,25 @@
-import { ChatGPT, ModelType } from './core/index.ts';
+import { ChatGPTAPI, ModelType } from './core/index.ts';
 import { MessageFactory } from './core/factories/messageFactory.ts';
 
 import type {
     Message,
     Conversation as IConversation,
+    ImageMeta
 } from './core/index.ts';
 import type { ResponseStreamParseResult } from './core/index.ts';
 
 export interface CreateMessageOptions {
-    parent?:    string;
-    model?:     ModelType;
+    parent?:        string;
+    model?:         ModelType;
+    attachments?:   Array<string | Omit<ImageMeta, 'mime_type'>>;
 }
 
 export interface RecreateMessageOptions {
-    message?:    string;
-    messageId?:  string;
-    model?:      ModelType;
+    message?:           string;
+    messageId?:         string;
+    model?:             ModelType;
+    attachments?:       Array<string | Omit<ImageMeta, 'mime_type'>>;
+    removeAttachments?: boolean;
 }
 
 export class Conversation implements IConversation {
@@ -25,16 +29,15 @@ export class Conversation implements IConversation {
     public currentMessageId:        string;
     public readonly rootMessage:    Message;
 
-    private readonly api: ChatGPT;
+    private readonly api: ChatGPTAPI;
 
-    constructor(api: ChatGPT, meta: IConversation) {
+    constructor(api: ChatGPTAPI, meta: IConversation) {
         this.api = api;
 
         this.conversationId     = meta.conversationId;
         this.title              = meta.title;
         this.messages           = meta.messages;
         this.currentMessageId   = meta.currentMessageId;
-
         
         const rootMessageId = Object.keys(this.messages).find(key => this.messages[key].parent === null) as string;
         this.rootMessage = this.messages[rootMessageId];
@@ -53,6 +56,10 @@ export class Conversation implements IConversation {
         return currentMessage;
     }
 
+    public getAttachments(messageId: string): ImageMeta[] {
+        return this.messages[messageId].message.metadata?.attachments || [];
+    }
+
     public appendMessage(message: Message) {
         this.messages[message.id]   = message;
         this.currentMessageId       = message.id;
@@ -67,13 +74,20 @@ export class Conversation implements IConversation {
     public async *createMessage(message: string, options?: CreateMessageOptions): AsyncGenerator<ResponseStreamParseResult> {
         const { parent = this.mostRecentMessage.id } = options || {};
 
-        const stream = await this.api.createMessage(message, { ...options, conversationId: this.conversationId, parent });
+        const attachments   = await this.api.createAttachments(options?.attachments || []);
+        const stream        = await this.api.createMessage(message, { ...options, conversationId: this.conversationId, parent, attachments });
 
         for await (const { meta, part } of stream) {
             if (meta?.completed) {
                 const lastId = meta.completedMessages[0].parent;
                 if (lastId) {
-                    const userMessage = MessageFactory.createMessage({ id: lastId, data: message, role: 'user', parent: this.mostRecentMessage.id });
+                    const userMessage = MessageFactory.createMessage({ 
+                        id:         lastId, 
+                        data:       message, 
+                        role:       'user', 
+                        parent:     this.mostRecentMessage.id, 
+                        attachments 
+                    });
                     this.appendMessage(userMessage);
                 }
 
@@ -93,15 +107,28 @@ export class Conversation implements IConversation {
         const userMessage = this.messages[messageId];
         const lastAssistantMessage = this.messages[this.messages[messageId].parent as string];
 
-        const message = options?.message || userMessage.message.content.parts[0];
+        const message = options?.message || userMessage.message.content.parts!.find(part => typeof part === 'string') || '';
 
-        const stream = await this.api.recreateMessage(message, { ...options, conversationId: this.conversationId, parent: lastAssistantMessage.id, messageId });
+        const attachments = await (async () => {
+            const attachments = options?.removeAttachments ? [] : this.getAttachments(messageId);
+            if (options?.attachments) {
+                attachments.push(...await this.api.createAttachments(options.attachments));
+            }
+            return attachments;
+        })();
+        const stream = await this.api.recreateMessage(message as string, { ...options, conversationId: this.conversationId, parent: lastAssistantMessage.id, messageId, attachments });
     
         for await (const { meta, part } of stream) {
             if (meta?.completed) {
                 const lastId = meta.completedMessages[0].parent;
                 if (lastId) {
-                    const userMessage = MessageFactory.createMessage({ id: lastId, data: message, role: 'user', parent: this.mostRecentMessage.id });
+                    const userMessage = MessageFactory.createMessage({ 
+                        id:         lastId, 
+                        data:       message,
+                        role:       'user', 
+                        parent:     this.mostRecentMessage.id, 
+                        attachments 
+                    });
                     this.appendMessage(userMessage);
                 }
 

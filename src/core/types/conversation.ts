@@ -1,7 +1,7 @@
 import type { 
     Message, 
     BaseMessageDetailVO
-} from './messages/message.ts';
+} from './messages/index.ts';
 
 export interface ConversationListItem {
     conversationId: string;
