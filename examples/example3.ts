@@ -9,7 +9,7 @@ if (import.meta.main) {
         model:      ModelType.GPT4o,
         returnType: 'message',
         attachments: [ './images/Fvk1RCvaEAYJH_J.jpg' ]
-    }), { showDetail: true });
+    }), { showConversationId: true, showMessageDetails: true });
 
     const conversations = await client.getConversations();
     const conversation  = await client.getConversation(conversations[0].conversationId);
@@ -20,6 +20,6 @@ if (import.meta.main) {
         conversation.createMessage('Can you describe it in more detail?', {
             model:          ModelType.O3Mini,
             attachments:    messages[0].message.metadata?.attachments
-        })
+        }), { showMessageDetails: true }
     );
 }

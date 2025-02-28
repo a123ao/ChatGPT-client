@@ -12,11 +12,11 @@ if (import.meta.main) {
         },
         model:      ModelType.GPT4oMini,
         returnType: 'message'
-    }), { showDetail: true });
+    }), { showConversationId: true, showMessageDetails: true });
 
     const conversations = await client.getConversations();
     const conversation  = await client.getConversation(conversations[0].conversationId);
 
-    await output(conversation.createMessage('Can you tell me a joke about `Time`?'),);
+    await output(conversation.createMessage('Can you tell me a joke about `Time`?'), { showMessageDetails: true });
     console.log(conversation.traverse(conversation.rootMessage.id, hasContent));
 }

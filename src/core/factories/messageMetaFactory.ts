@@ -1,3 +1,5 @@
+import { MessageContentFactory } from './messageContentFactory.ts';
+
 import type { 
     UserMessageMeta,
     InstructionMessageMeta,
@@ -28,29 +30,6 @@ export class MessageMetaFactory {
     public static createUserMessageMeta(params: CreateUserMessageMetaParams): UserMessageMeta {
         const { id, data } = params;
 
-        const content: MessageContent = (() => {
-            if (!params.attachments) {
-                return {
-                    content_type: 'text',
-                    parts: [ data ]
-                };
-            }
-
-            return {
-                content_type: 'multimodal_text',
-                parts: [
-                    ...params.attachments.map<ImagePart>(attachment => ({
-                        asset_pointer:  'file-service://' + attachment.id,
-                        content_type:   'image_asset_pointer',
-                        size_bytes: 0,
-                        width:      0,
-                        height:     0
-                    })),
-                    data,
-                ],
-            };
-        })();
-
         return {
             id,
             author: {
@@ -58,7 +37,7 @@ export class MessageMetaFactory {
                 name:       null,
                 metadata:   {},
             },
-            content,
+            content: MessageContentFactory.createMessageContent(data, params.attachments),
             metadata: {
                 attachments: params.attachments,
             },

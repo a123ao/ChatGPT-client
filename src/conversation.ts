@@ -107,7 +107,7 @@ export class Conversation implements IConversation {
         const userMessage = this.messages[messageId];
         const lastAssistantMessage = this.messages[this.messages[messageId].parent as string];
 
-        const message = options?.message || userMessage.message.content.parts!.find(part => typeof part === 'string') || '';
+        const message = options?.message || userMessage.message.content.parts?.find(part => typeof part === 'string') || '';
 
         const attachments = await (async () => {
             const attachments = options?.removeAttachments ? [] : this.getAttachments(messageId);
@@ -126,7 +126,7 @@ export class Conversation implements IConversation {
                         id:         lastId, 
                         data:       message,
                         role:       'user', 
-                        parent:     this.mostRecentMessage.id, 
+                        parent:     lastAssistantMessage.id,
                         attachments 
                     });
                     this.appendMessage(userMessage);

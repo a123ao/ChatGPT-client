@@ -4,34 +4,43 @@ import type {
     Message, 
     SystemMessageMeta, 
     UserMessageMeta, 
-    AssistantMessageMeta 
+    AssistantMessageMeta ,
+    ImageMeta
 } from '../types/messages/index.ts';
 
 // Meta recieved from the server
-export type ResponseMetaType = SystemMessageMeta | UserMessageMeta | AssistantMessageMeta;
-export type MetaChunkValue<T extends ResponseMetaType >  = { 
+type ResponseMetaType = SystemMessageMeta | UserMessageMeta | AssistantMessageMeta;
+type MetaChunkValue<T extends ResponseMetaType >  = { 
     message:            T & { status: 'finished_successfully' | 'in_progress' }, 
     conversation_id:    string 
 };
 
 // Chunk types
-export type ChunkOperation  = 'add' | 'append' | 'patch' | 'replace';
-export type ChunkValue      = string | BaseChunk[] | MetaChunkValue<ResponseMetaType>;
+type ChunkOperation  = 'add' | 'append' | 'patch' | 'replace';
+type ChunkValue      = string | BaseChunk[] | MetaChunkValue<ResponseMetaType>;
 
-export interface BaseChunk {
+interface BaseChunk {
     p?: string;         // path
     o?: ChunkOperation; // operation
     v?: ChunkValue;     // value
     c?: number;         // count
 }
 
-export interface MetaChunk<T extends ResponseMetaType> extends BaseChunk {
+interface MetaChunk<T extends ResponseMetaType> extends BaseChunk {
     v: MetaChunkValue<T>;
 }
 
-export const isMetaChunk = (chunk: BaseChunk): chunk is MetaChunk<ResponseMetaType> => {
+const isMetaChunk = (chunk: BaseChunk): chunk is MetaChunk<ResponseMetaType> => {
     return typeof chunk.v === 'object' && chunk.v !== null && 'message' in chunk.v;
 };
+
+const isUserMetaChunk = (chunk: MetaChunk<ResponseMetaType>): chunk is MetaChunk<UserMessageMeta> => {
+    return chunk.v.message.author.role === 'user';
+}
+
+const hasAttachments = (chunk: MetaChunk<ResponseMetaType>): boolean => {
+    return isUserMetaChunk(chunk) && chunk.v.message.metadata.attachments !== undefined && chunk.v.message.metadata.attachments.length > 0;
+}
 
 export type ResponseMessageMeta = Message & { 
     conversationId:     string,
@@ -56,7 +65,7 @@ export class ResponseStreamParser {
             if (!event || !data || event === 'delta_encoding') continue;
 
             try {
-                const parsedData = JSON.parse(data) as BaseChunk;
+                const parsedData: BaseChunk = JSON.parse(data);
 
                 if (isMetaChunk(parsedData)) {
                     const { message } = parsedData.v;
@@ -68,14 +77,15 @@ export class ResponseStreamParser {
                         message:    {
                             id:         message.id,
                             author:     message.author,
-                            content:    { parts: message.content.parts as string[] },
+                            content:    { parts: message.content.parts },
+                            metadata:   { attachments: message.metadata.attachments as ImageMeta[] || [] }
                         },
                         parent:     parentId,
                         children:   [],
                     });
                     previousMessage = completedMessages[completedMessages.length - 1];
 
-                    if (message.status === 'finished_successfully') {
+                    if (message.status === 'finished_successfully' && !hasAttachments(parsedData)) {
                         progressingMessage  = null;
                         inProgress          = false;
                         continue;
@@ -85,28 +95,28 @@ export class ResponseStreamParser {
 
                     progressingMessage  = completedMessages[completedMessages.length - 1];
                     inProgress          = true;
-                    const recipient     = message.recipient as string;
+                    const recipient     = message.recipient;
 
                     const meta = { 
                         ...progressingMessage, 
                         conversationId, 
                         recipient, 
                         completed: false, 
-                        completedMessages: [] 
+                        completedMessages
                     };
                     yield { meta, part: null };
                 } else if (parsedData.o === 'patch' && progressingMessage) {
                     for (const patch of parsedData.v as BaseChunk[]) {
-                        if (patch.p === '/message/content/parts/0') {
-                            progressingMessage.message.content.parts![0] += patch.v as string;
+                        if (patch.p === '/message/content/parts/0' && typeof patch.v === 'string') {
+                            progressingMessage.message.content.parts![0] += patch.v;
 
-                            yield { meta: null, part: patch.v as string };
+                            yield { meta: null, part: patch.v };
                         }
                     }
                     inProgress = false;
-                } else if (inProgress && progressingMessage) {
-                    progressingMessage.message.content.parts![0] += parsedData.v as string;
-                    yield { meta: null, part: parsedData.v as string };
+                } else if (inProgress && progressingMessage && typeof parsedData.v === 'string') {
+                    progressingMessage.message.content.parts![0] += parsedData.v;
+                    yield { meta: null, part: parsedData.v };
                 }
             } catch (err) {
                 if (err instanceof Error) {
@@ -116,8 +126,10 @@ export class ResponseStreamParser {
             }
         }
 
+        if (!progressingMessage) return;
+
         const meta = { 
-            ...progressingMessage as Message, 
+            ...progressingMessage, 
             conversationId, 
             recipient: 'all', 
             completed: true, 

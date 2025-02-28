@@ -19,7 +19,7 @@ import type {
     RecreateMessagePayload,
     ImageMeta,
 } from './types/index.ts';
-import type { ResponseStreamParseResult } from './utils/index.ts';
+import type { ResponseMessageMeta, ResponseStreamParseResult } from './utils/index.ts';
 
 export interface ChatGPTConfiguration {
     token:  string;
@@ -222,6 +222,26 @@ export class ChatGPT implements ChatGPTAPI {
         return res.body;
     }
 
+    private async *parseStream(res: ReadableStream<Uint8Array>, userMessage: Message, conversationId?: string): AsyncGenerator<ResponseStreamParseResult> {
+        const stream = ResponseStreamParser.parseV1EncodedStream(res);
+
+        if (conversationId) {
+            const meta: ResponseMessageMeta = {
+                ...userMessage,
+                conversationId:     conversationId,
+                recipient:          'all',
+                completed:          false,
+                completedMessages:  []
+            };
+
+            yield { meta, part: null };
+        }
+        
+        for await (const chunk of stream) {
+            yield chunk;
+        }
+    }
+
     public async createMessage(message: string, options?: ChatGPTCreateMessageOptions): Promise<AsyncGenerator<ResponseStreamParseResult>> {
         const { model = ModelType.GPT4oMini } = options || {};
         if (options && ('conversationId' in options !== 'parent' in options)) {
@@ -241,16 +261,17 @@ export class ChatGPT implements ChatGPTAPI {
         })();
 
         const userMessage = MessageFactory.createMessage({
-            id:     v1.generate(),
-            data:   message,
-            role:   'user',
-            parent
+            id:             v1.generate(),
+            data:           message,
+            role:           'user',
+            parent,
+            attachments:    options?.attachments
         });
 
         const meta = MessageMetaFactory.createUserMessageMeta({
             id:             userMessage.id,
             data:           message,
-            attachments:    options?.attachments
+            attachments:    userMessage.message.metadata?.attachments
         });
 
         const payload = MessagePayloadFactory.createCreateMessagePayload({
@@ -262,23 +283,24 @@ export class ChatGPT implements ChatGPTAPI {
         });
 
         const res = await this.fetchMessage(payload, options);
-        return ResponseStreamParser.parseV1EncodedStream(res);
+        return this.parseStream(res, userMessage, conversationId);
     }
 
-    public async recreateMessage(message: string, options: ChatGPTRecreateMessageOptions): Promise<AsyncGenerator<ResponseStreamParseResult>> {
+    public async recreateMessage(message: string, options: ChatGPTRecreateMessageOptions): Promise<AsyncGenerator<ResponseStreamParseResult>>{
         const { model = ModelType.GPT4oMini } = options || {};
 
         const userMessage = MessageFactory.createMessage({
-            id:     options.messageId,
-            data:   message,
-            role:   'user',
-            parent: options.parent
+            id:             options.messageId,
+            data:           message,
+            role:           'user',
+            parent:         options.parent,
+            attachments:    options.attachments
         });
 
         const meta = MessageMetaFactory.createUserMessageMeta({
             id:             userMessage.id,
             data:           message,
-            attachments:    options.attachments
+            attachments:    userMessage.message.metadata?.attachments
         });
 
         const payload = MessagePayloadFactory.createRecreateMessagePayload({
@@ -289,7 +311,7 @@ export class ChatGPT implements ChatGPTAPI {
         });
 
         const res = await this.fetchMessage(payload, options);
-        return ResponseStreamParser.parseV1EncodedStream(res);
+        return this.parseStream(res, userMessage, options.conversationId);
     }
 
     public async uploadFile(buffer: Uint8Array, filename: string) {

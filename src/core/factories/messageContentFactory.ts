@@ -1,8 +1,8 @@
 import { MessageContent, ImageMeta, ImagePart } from '../types/index.ts';
 
 export class MessageContentFactory {
-    public static createContent(data: string, attachments?: ImageMeta[]): MessageContent {
-        if (!attachments) {
+    public static createMessageContent(data: string, attachments?: ImageMeta[]): MessageContent {
+        if (!attachments?.length) {
             return {
                 content_type: 'text',
                 parts: [ data ]

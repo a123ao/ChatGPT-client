@@ -1,38 +1,55 @@
 import process from 'node:process';
-import { ResponseStreamParseResult } from '../core/index.ts';
+import { ResponseStreamParseResult, Message } from '../core/index.ts';
 
 export interface OutputOptions {
-    showDetail?: boolean;
+    showConversationId?: boolean;
+    showMessageDetails?: boolean;
 }
 
 export const output = async (
     stream:     AsyncGenerator<ResponseStreamParseResult>, 
     options?:   OutputOptions
 ) => {
+    const { showMessageDetails = false, showConversationId = false } = options || {};
+
     let firstResponse   = true;
     let inProgress      = false;
+    const completedMessage: Message[] = [];
     for await (const { meta, part } of stream) {
         if (meta) {
+            // Print conversation ID as soon as it is available
             if (firstResponse) {
-                if (options?.showDetail) process.stdout.write(`Conversation ID: ${meta.conversationId}\n`);
+                if (showConversationId) process.stdout.write(`Conversation ID: ${meta.conversationId}\n`);
                 firstResponse = false;
             }
 
+            // Stop printing if conversation is completed
             if (meta.completed) {
-                process.stdout.write('\n\n');
+                completedMessage.push(...meta.completedMessages);
                 break;
             }
 
+            // Jump to new line if the output has been in other message
             if (inProgress) {
                 process.stdout.write('\n\n');
             }
 
+            // Print message header
             if (meta.recipient === 'bio') {
                 process.stdout.write(`---📘Memory Updating📘---\n`);
             } else if (meta.message.author.role === 'tool') {
                 process.stdout.write('---💭Assistant Thinking💭---\n');
-            } else {
+            } else if (meta.message.author.role === 'assistant') {
                 process.stdout.write(`---💬Assistant Response💬---\n`);
+            } else {
+                inProgress = false;
+                continue;
+            }
+
+            // Print message details
+            if (showMessageDetails) {
+                process.stdout.write(`Thread: ${meta.parent} -> ${meta.id}\n`);
+                process.stdout.write('-\n');
             }
 
             inProgress = true;
@@ -42,4 +59,12 @@ export const output = async (
             process.stdout.write(part);
         }
     }
+
+    const attachments = completedMessage.flatMap(m => m.message.metadata?.attachments || []);
+    if (showMessageDetails && attachments.length) {
+        process.stdout.write('\n--\n');
+        process.stdout.write(`Attachments: ${JSON.stringify(attachments.map(a => { return { id: a.id, name: a.name }}))}\n`);
+    }
+
+    process.stdout.write('\n\n');
 }

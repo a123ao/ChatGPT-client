@@ -12,5 +12,5 @@ if (import.meta.main) {
         },
         model:      ModelType.O3Mini,
         returnType: 'message'
-    }), { showDetail: true });
+    }), { showConversationId: true, showMessageDetails: true });
 }
