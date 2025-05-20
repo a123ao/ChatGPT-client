@@ -19,7 +19,11 @@ export class MessageFactory {
             message: {
                 id,
                 author: { role },
+<<<<<<< HEAD
                 content: MessageContentFactory.createContent(data, params.attachments),
+=======
+                content: MessageContentFactory.createMessageContent(data, params.attachments),
+>>>>>>> 3562679 (Add temporary chat, web search message)
                 metadata: { attachments: params.attachments || [] },
             },
             parent,

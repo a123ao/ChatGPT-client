@@ -9,10 +9,18 @@ export interface ConversationListItem {
 }
 
 export interface Conversation {
+<<<<<<< HEAD
     conversationId:     string;
     title:              string;
     messages:           Record<string, Message>;
     currentMessageId:   string;
+=======
+    isTemporary?:       boolean;
+    conversationId:     string;
+    title?:             string;
+    messages?:          Record<string, Message>;
+    currentMessageId?:  string;
+>>>>>>> 3562679 (Add temporary chat, web search message)
 }
 
 export interface ConversationListItemVO {

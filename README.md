@@ -8,7 +8,15 @@ A Deno library for interacting with ChatGPT, providing conversation management a
 ChatGPT
 ├── examples/
 │   ├── example0.ts       # Custom instruction example
+<<<<<<< HEAD
 │   └── example1.ts       # Interactive chat example
+=======
+│   ├── example1.ts       # Interactive chat example
+│   ├── example2.ts       # Interactive chat example
+│   ├── example3.ts       # Attachment chat example
+│   ├── example4.ts       # Temporary chat example
+│   └── example5.ts       # Temporary attachment chat example
+>>>>>>> 3562679 (Add temporary chat, web search message)
 ├── src/
 │   ├── core/            # Core functionality
 │   │   ├── chatGPT.ts
@@ -49,6 +57,31 @@ const conversations = await client.getConversations();
 const conversation = await client.getConversation(conversations[0].conversationId);
 ```
 
+<<<<<<< HEAD
+=======
+### Temporary Conversation
+
+```typescript
+    const conversationId = await output(await client.createConversation('Hello, how are you?', {
+        customInstruction: {
+            profile:        '',
+            instruction:    'You are now configured to be a friendly and expressive AI assistant.'
+        },
+        model:      ModelType.GPT4oMini,
+        returnType: 'message',
+        temporary: true // Temporary chat
+    }), { showConversationId: true, showMessageDetails: true });
+
+    const conversation  = await client.getTemporaryConversationId(conversationId);
+    while (true) {
+      const message = prompt('>') || '';
+      if (!message) break;
+
+      await output(conversation.createMessage(message));
+    }
+```
+
+>>>>>>> 3562679 (Add temporary chat, web search message)
 ### Custom Instructions
 
 You can customize the behavior of the AI by providing custom instructions:
