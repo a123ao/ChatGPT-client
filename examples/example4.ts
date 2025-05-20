@@ -5,7 +5,7 @@ if (import.meta.main) {
     const accounts  = Object.values(config.accounts);
     const client    = new ChatGPTClient(accounts[0]);
 
-    const conversationId = await output(await client.createConversation('write 100 words', {
+    const conversationId = await output(await client.createConversation('Hello, how are you?', {
         customInstruction: {
             profile:        '',
             instruction:    'You are now configured to be a friendly and expressive AI assistant.'
