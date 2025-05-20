@@ -9,11 +9,10 @@ export interface ConversationListItem {
 }
 
 export interface Conversation {
-    isTemporary?:       boolean;
     conversationId:     string;
-    title?:             string;
-    messages?:          Record<string, Message>;
-    currentMessageId?:  string;
+    title:              string;
+    messages:           Record<string, Message>;
+    currentMessageId:   string;
 }
 
 export interface ConversationListItemVO {
