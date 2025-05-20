@@ -27,7 +27,7 @@ export class CookieParams {
               return cookie.split('"')[1];
             }
         }
-        return ""
+        return "";
     }
 
     public get(key: string) {

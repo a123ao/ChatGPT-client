@@ -56,23 +56,23 @@ const conversation = await client.getConversation(conversations[0].conversationI
 ### Temporary Conversation
 
 ```typescript
-    const conversationId = await output(await client.createConversation('Hello, how are you?', {
-        customInstruction: {
-            profile:        '',
-            instruction:    'You are now configured to be a friendly and expressive AI assistant.'
-        },
-        model:      ModelType.GPT4oMini,
-        returnType: 'message',
-        temporary: true // Temporary chat
-    }), { showConversationId: true, showMessageDetails: true });
+const conversationId = await output(await client.createConversation('Hello, how are you?', {
+    customInstruction: {
+        profile:        '',
+        instruction:    'You are now configured to be a friendly and expressive AI assistant.'
+    },
+    model:      ModelType.GPT4oMini,
+    returnType: 'message',
+    temporary: true // Temporary chat
+}), { showConversationId: true, showMessageDetails: true });
 
-    const conversation  = await client.getTemporaryConversationId(conversationId);
-    while (true) {
-      const message = prompt('>') || '';
-      if (!message) break;
+const conversation  = await client.getTemporaryConversationId(conversationId);
+while (true) {
+  const message = prompt('>') || '';
+  if (!message) break;
 
-      await output(conversation.createMessage(message));
-    }
+  await output(conversation.createMessage(message));
+}
 ```
 
 ### Custom Instructions
