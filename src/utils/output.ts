@@ -7,22 +7,13 @@ export interface OutputOptions {
 }
 
 export const output = async (
-<<<<<<< HEAD
-    stream:     AsyncGenerator<ResponseStreamParseResult>, 
-=======
     stream:     AsyncGenerator<ResponseStreamParseResult>,
->>>>>>> 3562679 (Add temporary chat, web search message)
     options?:   OutputOptions
 ) => {
     const { showMessageDetails = false, showConversationId = false } = options || {};
 
     let firstResponse   = true;
     let inProgress      = false;
-<<<<<<< HEAD
-    const completedMessage: Message[] = [];
-    for await (const { meta, part } of stream) {
-        if (meta) {
-=======
     let conversationId: string = '';
     const completedMessage: Message[] = [];
 
@@ -31,7 +22,6 @@ export const output = async (
             if (meta.conversationId) {
               conversationId = meta.conversationId;
             }
->>>>>>> 3562679 (Add temporary chat, web search message)
             // Print conversation ID as soon as it is available
             if (firstResponse) {
                 if (showConversationId) process.stdout.write(`Conversation ID: ${meta.conversationId}\n`);
@@ -55,15 +45,11 @@ export const output = async (
             } else if (meta.message.author.role === 'tool') {
                 process.stdout.write('---💭Assistant Thinking💭---\n');
             } else if (meta.message.author.role === 'assistant') {
-<<<<<<< HEAD
-                process.stdout.write(`---💬Assistant Response💬---\n`);
-=======
               if (meta.message.author.metadata.real_author === 'tool:web') {
                 process.stdout.write(`---💬Assistant Searching Web---\n`);
               } else {
                 process.stdout.write(`---💬Assistant Response💬---\n`);
               }
->>>>>>> 3562679 (Add temporary chat, web search message)
             } else {
                 inProgress = false;
                 continue;
@@ -90,8 +76,5 @@ export const output = async (
     }
 
     process.stdout.write('\n\n');
-<<<<<<< HEAD
-=======
     return conversationId;
->>>>>>> 3562679 (Add temporary chat, web search message)
 }

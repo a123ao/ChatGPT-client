@@ -21,8 +21,6 @@ export class CookieParams {
         return cookies;
     }
 
-<<<<<<< HEAD
-=======
     public static getSetCookie(name: string, cookieString: string[]) {
         for (const cookie of cookieString) {
             if (cookie.startsWith(name + "=")) {
@@ -32,7 +30,6 @@ export class CookieParams {
         return "";
     }
 
->>>>>>> 3562679 (Add temporary chat, web search message)
     public get(key: string) {
         return this.cookies.get(key);
     }

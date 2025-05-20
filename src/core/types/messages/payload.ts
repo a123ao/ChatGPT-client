@@ -15,10 +15,7 @@ export interface BaseMessagePayload {
         plugin_ids?:    null;
     };
     supported_encodings:    string[]; // ['v1'] indicate the version of the encoding
-<<<<<<< HEAD
-=======
     
->>>>>>> 3562679 (Add temporary chat, web search message)
 }
 
 export interface CreateMessagePayload extends BaseMessagePayload {

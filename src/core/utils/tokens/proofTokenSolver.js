@@ -112,8 +112,4 @@ const main = async () => {
 
 if (import.meta.main) {
     main();
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> 3562679 (Add temporary chat, web search message)

@@ -12,10 +12,7 @@ export interface CreateMessageOptions {
     parent?:        string;
     model?:         ModelType;
     attachments?:   Array<string | Omit<ImageMeta, 'mime_type'>>;
-<<<<<<< HEAD
-=======
     temporary?:     boolean; 
->>>>>>> 3562679 (Add temporary chat, web search message)
 }
 
 export interface RecreateMessageOptions {
@@ -27,27 +24,13 @@ export interface RecreateMessageOptions {
 }
 
 export class Conversation implements IConversation {
-<<<<<<< HEAD
-    public readonly conversationId: string;;
-=======
     public readonly conversationId: string;
->>>>>>> 3562679 (Add temporary chat, web search message)
     public readonly title:          string;
     public readonly messages:       Record<string, Message>;
     public currentMessageId:        string;
     public readonly rootMessage:    Message;
 
     private readonly api: ChatGPTAPI;
-<<<<<<< HEAD
-
-    constructor(api: ChatGPTAPI, meta: IConversation) {
-        this.api = api;
-
-        this.conversationId     = meta.conversationId;
-        this.title              = meta.title;
-        this.messages           = meta.messages;
-        this.currentMessageId   = meta.currentMessageId;
-=======
     public readonly isTemporary:    boolean;
 
     constructor(api: ChatGPTAPI, meta: IConversation) {
@@ -58,7 +41,6 @@ export class Conversation implements IConversation {
         this.title              = meta.title ?? '';
         this.messages           = meta.messages ?? {};
         this.currentMessageId   = meta.currentMessageId ?? '';
->>>>>>> 3562679 (Add temporary chat, web search message)
         
         const rootMessageId = Object.keys(this.messages).find(key => this.messages[key].parent === null) as string;
         this.rootMessage = this.messages[rootMessageId];
@@ -93,17 +75,10 @@ export class Conversation implements IConversation {
     }
 
     public async *createMessage(message: string, options?: CreateMessageOptions): AsyncGenerator<ResponseStreamParseResult> {
-<<<<<<< HEAD
-        const { parent = this.mostRecentMessage.id } = options || {};
-
-        const attachments   = await this.api.createAttachments(options?.attachments || []);
-        const stream        = await this.api.createMessage(message, { ...options, conversationId: this.conversationId, parent, attachments });
-=======
         const { parent = this.mostRecentMessage?.id } = options || {};
 
         const attachments   = await this.api.createAttachments(options?.attachments || []);
         const stream        = await this.api.createMessage(message, { ...options, conversationId: this.conversationId, parent, attachments }, this.isTemporary);
->>>>>>> 3562679 (Add temporary chat, web search message)
 
         for await (const { meta, part } of stream) {
             if (meta?.completed) {
@@ -113,11 +88,7 @@ export class Conversation implements IConversation {
                         id:         lastId, 
                         data:       message, 
                         role:       'user', 
-<<<<<<< HEAD
-                        parent:     this.mostRecentMessage.id, 
-=======
                         parent:     this.mostRecentMessage?.id, 
->>>>>>> 3562679 (Add temporary chat, web search message)
                         attachments 
                     });
                     this.appendMessage(userMessage);

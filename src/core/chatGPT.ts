@@ -35,20 +35,14 @@ export interface ChatGPTCreateMessageOptions {
         instruction:    string;
     }
     attachments?:       ImageMeta[];
-<<<<<<< HEAD
-=======
     temporary?:         boolean; 
->>>>>>> 3562679 (Add temporary chat, web search message)
 }
 
 export interface ChatGPTRecreateMessageOptions extends ChatGPTCreateMessageOptions {
     conversationId:     string;
     parent:             string;
     messageId:          string;
-<<<<<<< HEAD
-=======
     temporary?:         boolean; 
->>>>>>> 3562679 (Add temporary chat, web search message)
 }
 
 export interface FetchMemoriesResult {
@@ -64,11 +58,7 @@ export interface ChatGPTAPI {
     getConversations(): Promise<ConversationListItem[]>;
     getConversation(conversationId: string): Promise<Conversation>;
     deleteConversation(conversationId: string): Promise<void>;
-<<<<<<< HEAD
-    createMessage(message: string, options?: ChatGPTCreateMessageOptions): Promise<AsyncGenerator<ResponseStreamParseResult>>;
-=======
     createMessage(message: string, options?: ChatGPTCreateMessageOptions, isTemporary?: boolean): Promise<AsyncGenerator<ResponseStreamParseResult>>;
->>>>>>> 3562679 (Add temporary chat, web search message)
     recreateMessage(message: string, options: ChatGPTRecreateMessageOptions): Promise<AsyncGenerator<ResponseStreamParseResult>>;
     uploadFile(buffer: Uint8Array, filename: string): Promise<{ id: string, name: string }>;
     createAttachments(attachments: Array<string | Omit<ImageMeta, 'mime_type'>>): Promise<ImageMeta[]>;
@@ -85,30 +75,20 @@ export class ChatGPT implements ChatGPTAPI {
 
     private readonly deviceId = v1.generate();
 
-<<<<<<< HEAD
-=======
     private conversationKeyCookie: string | null;
->>>>>>> 3562679 (Add temporary chat, web search message)
     constructor(config: ChatGPTConfiguration) {
         if (!config.token || !config.cookie) throw new Error('Token and cookie are required');
 
         this.cookies = new CookieParams(config.cookie);
         this.cookies.set('oai-device-id', this.deviceId);
-<<<<<<< HEAD
-
-=======
->>>>>>> 3562679 (Add temporary chat, web search message)
         this.headers = {
             ...this.headers,
             authorization:      `Bearer ${config.token}`,
             cookie:             this.cookies.toString(),
             'Oai-Device-Id':    this.deviceId
         };
-<<<<<<< HEAD
-=======
 
         this.conversationKeyCookie = null;
->>>>>>> 3562679 (Add temporary chat, web search message)
     }
 
     public async getTokens(): Promise<ChatGPTRequireTokens> {
@@ -216,36 +196,6 @@ export class ChatGPT implements ChatGPTAPI {
     }
 
     private async fetchMessage(payload: CreateMessagePayload | RecreateMessagePayload, _options?: ChatGPTCreateMessageOptions): Promise<ReadableStream<Uint8Array>> {
-<<<<<<< HEAD
-        const url = new URL('conversation', ChatGPT.BASE_API_URL);
-
-        const { chatRequirementsToken, proofToken, turnstileToken } = await this.getTokens();
-        const headers = {
-            ...this.headers,
-            'accept': 'event-stream',
-            'content-type': 'application/json',
-            'openai-sentinel-chat-requirements-token':  chatRequirementsToken,
-            'openai-sentinel-proof-token':              proofToken,
-            'openai-sentinel-turnstile-token':          turnstileToken,
-        };
-
-        const res = await fetch(url, {
-            method: 'POST',
-            headers,
-            body:   JSON.stringify(payload)
-        });
-        if (!res.ok || !res.body) {
-            if (res.status === 429) {
-                const resetTime = await this.fetchResetTime();
-                throw new Error('Rate limited. Reset time: ' + resetTime);
-            }
-
-            const text = await res.text();
-            throw new Error('Failed to create message. Status: ' + res.status + ' ' + text);
-        }
-
-        return res.body;
-=======
       const url = new URL('conversation', ChatGPT.BASE_API_URL);
 
       const { chatRequirementsToken, proofToken, turnstileToken } = await this.getTokens();
@@ -278,7 +228,6 @@ export class ChatGPT implements ChatGPTAPI {
       this.conversationKeyCookie = conversationKeyCookie;
 
       return res.body;
->>>>>>> 3562679 (Add temporary chat, web search message)
     }
 
     private async *parseStream(res: ReadableStream<Uint8Array>, userMessage: Message, conversationId?: string): AsyncGenerator<ResponseStreamParseResult> {
@@ -301,11 +250,7 @@ export class ChatGPT implements ChatGPTAPI {
         }
     }
 
-<<<<<<< HEAD
-    public async createMessage(message: string, options?: ChatGPTCreateMessageOptions): Promise<AsyncGenerator<ResponseStreamParseResult>> {
-=======
     public async createMessage(message: string, options?: ChatGPTCreateMessageOptions, isTemporary?: boolean): Promise<AsyncGenerator<ResponseStreamParseResult>> {
->>>>>>> 3562679 (Add temporary chat, web search message)
         const { model = ModelType.GPT4oMini } = options || {};
         if (options && ('conversationId' in options !== 'parent' in options)) {
             throw new Error('Both conversationId and parent are required or neither');
@@ -342,13 +287,6 @@ export class ChatGPT implements ChatGPTAPI {
             parent: userMessage.parent,
             conversationId,
             model,
-<<<<<<< HEAD
-            instructionMeta
-        });
-
-        const res = await this.fetchMessage(payload, options);
-        return this.parseStream(res, userMessage, conversationId);
-=======
             instructionMeta,
             temporary: isTemporary || options?.temporary || false,
         });
@@ -356,7 +294,6 @@ export class ChatGPT implements ChatGPTAPI {
         const body = await this.fetchMessage(payload, options);
 
         return this.parseStream(body, userMessage, conversationId);
->>>>>>> 3562679 (Add temporary chat, web search message)
     }
 
     public async recreateMessage(message: string, options: ChatGPTRecreateMessageOptions): Promise<AsyncGenerator<ResponseStreamParseResult>>{
@@ -383,13 +320,8 @@ export class ChatGPT implements ChatGPTAPI {
             model
         });
 
-<<<<<<< HEAD
-        const res = await this.fetchMessage(payload, options);
-        return this.parseStream(res, userMessage, options.conversationId);
-=======
         const body = await this.fetchMessage(payload, options);
         return this.parseStream(body, userMessage, options.conversationId);
->>>>>>> 3562679 (Add temporary chat, web search message)
     }
 
     public async uploadFile(buffer: Uint8Array, filename: string) {
