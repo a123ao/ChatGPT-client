@@ -29,7 +29,7 @@ export class CookieParams {
               return cookie.split('"')[1];
             }
         }
-        return ""
+        return "";
     }
 
 >>>>>>> 3562679 (Add temporary chat, web search message)
