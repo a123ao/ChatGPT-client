@@ -9,6 +9,7 @@ export interface CreateConversationOptions<T extends CreateConversationReturnTyp
         instruction?:   string;
     }
     returnType?: T;
+    temporary?: boolean;
 }
 
 export class ChatGPTClient {
@@ -42,6 +43,10 @@ export class ChatGPTClient {
         const conversation = await this.api.getConversation(conversationId);
 
         return new Conversation(this.api, conversation);
+    }
+
+    public async getTemporaryConversationId(conversationId: string) {
+      return new Conversation(this.api, { conversationId, isTemporary: true });
     }
 
     public async *createConversationStream(message: string, options?: CreateMessageOptions) {

@@ -9,8 +9,8 @@
         }
     },
     "navigator": {
-        "language": "zh-TW",
-        "languages": ["zh-TW", "en", "en-GB", "en-US"],
+        "language": "en-us",
+        "languages": ["en", "en-GB", "en-US"],
         "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Edg/130.0.0.0",
         "hardwareConcurrency": 8
     },

@@ -19,7 +19,7 @@ export class MessageFactory {
             message: {
                 id,
                 author: { role },
-                content: MessageContentFactory.createContent(data, params.attachments),
+                content: MessageContentFactory.createMessageContent(data, params.attachments),
                 metadata: { attachments: params.attachments || [] },
             },
             parent,

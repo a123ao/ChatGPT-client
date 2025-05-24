@@ -21,6 +21,15 @@ export class CookieParams {
         return cookies;
     }
 
+    public static getSetCookie(name: string, cookieString: string[]) {
+        for (const cookie of cookieString) {
+            if (cookie.startsWith(name + "=")) {
+              return cookie.split('"')[1];
+            }
+        }
+        return "";
+    }
+
     public get(key: string) {
         return this.cookies.get(key);
     }

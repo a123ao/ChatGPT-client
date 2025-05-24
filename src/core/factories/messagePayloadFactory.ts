@@ -15,6 +15,7 @@ export interface BaseCreateMessagePayloadParams {
     conversationId?:    string;
     instructionMeta?:   InstructionMessageMeta;
     attachments?:       string[];
+    temporary?:         boolean;
 }
 
 export class MessagePayloadFactory {
@@ -27,9 +28,10 @@ export class MessagePayloadFactory {
                 parent_message_id:  params.parent,
                 model:              params.model,
                 conversation_id:    params.conversationId,
+                history_and_training_disabled: params.temporary
             }
         };
-
+        
         if (params.instructionMeta) {
             payload.messages = [ params.instructionMeta, ...payload.messages ];
         }
@@ -49,6 +51,10 @@ export class MessagePayloadFactory {
                 conversation_id:    params.conversationId,
             }
         };
+
+        if (params.temporary) {
+          (payload as any).history_and_training_disabled = true
+        }
 
         return payload;
     }

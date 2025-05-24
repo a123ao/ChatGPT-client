@@ -1,10 +1,11 @@
 import { ImageMeta, ImagePart } from './files/image.ts';
 
 export interface MessageAuthor {
-    role:       'system' | 'user' | 'assistant' | 'tool';
-    name:       null;
-    metadata:   Record<string, unknown>;
+  role: 'system' | 'user' | 'assistant' | 'tool';
+  name: string | null;
+  metadata: Record<string, any>;
 }
+
 
 export interface MessageContent {
     content_type:   'text' | 'user_editable_context' | 'multimodal_text';
@@ -22,8 +23,11 @@ export interface MessageMeta {
 export interface Message {
     id: string;
     message: {
-        id:         string;
-        author:     { role: MessageAuthor['role'] };
+        id:   string;
+        author: { 
+            role: MessageAuthor['role'],
+            metadata: MessageAuthor['metadata'],
+        };
         content:    { parts?: MessageContent['parts'] };
         metadata?: {
             attachments?: ImageMeta[];

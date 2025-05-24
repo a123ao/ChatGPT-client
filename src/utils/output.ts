@@ -7,16 +7,21 @@ export interface OutputOptions {
 }
 
 export const output = async (
-    stream:     AsyncGenerator<ResponseStreamParseResult>, 
+    stream:     AsyncGenerator<ResponseStreamParseResult>,
     options?:   OutputOptions
 ) => {
     const { showMessageDetails = false, showConversationId = false } = options || {};
 
     let firstResponse   = true;
     let inProgress      = false;
+    let conversationId: string = '';
     const completedMessage: Message[] = [];
+
     for await (const { meta, part } of stream) {
         if (meta) {
+            if (meta.conversationId) {
+              conversationId = meta.conversationId;
+            }
             // Print conversation ID as soon as it is available
             if (firstResponse) {
                 if (showConversationId) process.stdout.write(`Conversation ID: ${meta.conversationId}\n`);
@@ -40,7 +45,11 @@ export const output = async (
             } else if (meta.message.author.role === 'tool') {
                 process.stdout.write('---💭Assistant Thinking💭---\n');
             } else if (meta.message.author.role === 'assistant') {
+              if (meta.message.author.metadata.real_author === 'tool:web') {
+                process.stdout.write(`---💬Assistant Searching Web---\n`);
+              } else {
                 process.stdout.write(`---💬Assistant Response💬---\n`);
+              }
             } else {
                 inProgress = false;
                 continue;
@@ -67,4 +76,5 @@ export const output = async (
     }
 
     process.stdout.write('\n\n');
+    return conversationId;
 }

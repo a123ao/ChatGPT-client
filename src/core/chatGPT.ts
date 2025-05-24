@@ -35,12 +35,14 @@ export interface ChatGPTCreateMessageOptions {
         instruction:    string;
     }
     attachments?:       ImageMeta[];
+    temporary?:         boolean; 
 }
 
 export interface ChatGPTRecreateMessageOptions extends ChatGPTCreateMessageOptions {
     conversationId:     string;
     parent:             string;
     messageId:          string;
+    temporary?:         boolean; 
 }
 
 export interface FetchMemoriesResult {
@@ -56,7 +58,7 @@ export interface ChatGPTAPI {
     getConversations(): Promise<ConversationListItem[]>;
     getConversation(conversationId: string): Promise<Conversation>;
     deleteConversation(conversationId: string): Promise<void>;
-    createMessage(message: string, options?: ChatGPTCreateMessageOptions): Promise<AsyncGenerator<ResponseStreamParseResult>>;
+    createMessage(message: string, options?: ChatGPTCreateMessageOptions, isTemporary?: boolean): Promise<AsyncGenerator<ResponseStreamParseResult>>;
     recreateMessage(message: string, options: ChatGPTRecreateMessageOptions): Promise<AsyncGenerator<ResponseStreamParseResult>>;
     uploadFile(buffer: Uint8Array, filename: string): Promise<{ id: string, name: string }>;
     createAttachments(attachments: Array<string | Omit<ImageMeta, 'mime_type'>>): Promise<ImageMeta[]>;
@@ -73,18 +75,20 @@ export class ChatGPT implements ChatGPTAPI {
 
     private readonly deviceId = v1.generate();
 
+    private conversationKeyCookie: string | null;
     constructor(config: ChatGPTConfiguration) {
         if (!config.token || !config.cookie) throw new Error('Token and cookie are required');
 
         this.cookies = new CookieParams(config.cookie);
         this.cookies.set('oai-device-id', this.deviceId);
-
         this.headers = {
             ...this.headers,
             authorization:      `Bearer ${config.token}`,
             cookie:             this.cookies.toString(),
             'Oai-Device-Id':    this.deviceId
         };
+
+        this.conversationKeyCookie = null;
     }
 
     public async getTokens(): Promise<ChatGPTRequireTokens> {
@@ -192,34 +196,38 @@ export class ChatGPT implements ChatGPTAPI {
     }
 
     private async fetchMessage(payload: CreateMessagePayload | RecreateMessagePayload, _options?: ChatGPTCreateMessageOptions): Promise<ReadableStream<Uint8Array>> {
-        const url = new URL('conversation', ChatGPT.BASE_API_URL);
+      const url = new URL('conversation', ChatGPT.BASE_API_URL);
 
-        const { chatRequirementsToken, proofToken, turnstileToken } = await this.getTokens();
-        const headers = {
-            ...this.headers,
-            'accept': 'event-stream',
-            'content-type': 'application/json',
-            'openai-sentinel-chat-requirements-token':  chatRequirementsToken,
-            'openai-sentinel-proof-token':              proofToken,
-            'openai-sentinel-turnstile-token':          turnstileToken,
-        };
+      const { chatRequirementsToken, proofToken, turnstileToken } = await this.getTokens();
+      const headers = {
+        ...this.headers,
+        'accept': 'event-stream',
+        'content-type': 'application/json',
+        'openai-sentinel-chat-requirements-token':  chatRequirementsToken,
+        'openai-sentinel-proof-token':              proofToken,
+        'openai-sentinel-turnstile-token':          turnstileToken,
+        'cookie': this.conversationKeyCookie ? `conv_key=${this.conversationKeyCookie}` : ''
+      };
 
-        const res = await fetch(url, {
-            method: 'POST',
-            headers,
-            body:   JSON.stringify(payload)
-        });
-        if (!res.ok || !res.body) {
-            if (res.status === 429) {
-                const resetTime = await this.fetchResetTime();
-                throw new Error('Rate limited. Reset time: ' + resetTime);
-            }
-
-            const text = await res.text();
-            throw new Error('Failed to create message. Status: ' + res.status + ' ' + text);
+      const res = await fetch(url, {
+        method: 'POST',
+        headers,
+        body:   JSON.stringify(payload)
+      });
+      if (!res.ok || !res.body) {
+        if (res.status === 429) {
+          const resetTime = await this.fetchResetTime();
+          throw new Error('Rate limited. Reset time: ' + resetTime);
         }
 
-        return res.body;
+        const text = await res.text();
+        throw new Error('Failed to create message. Status: ' + res.status + ' ' + text);
+      }
+
+      const conversationKeyCookie = CookieParams.getSetCookie("conv_key", res.headers.getSetCookie())
+      this.conversationKeyCookie = conversationKeyCookie;
+
+      return res.body;
     }
 
     private async *parseStream(res: ReadableStream<Uint8Array>, userMessage: Message, conversationId?: string): AsyncGenerator<ResponseStreamParseResult> {
@@ -242,7 +250,7 @@ export class ChatGPT implements ChatGPTAPI {
         }
     }
 
-    public async createMessage(message: string, options?: ChatGPTCreateMessageOptions): Promise<AsyncGenerator<ResponseStreamParseResult>> {
+    public async createMessage(message: string, options?: ChatGPTCreateMessageOptions, isTemporary?: boolean): Promise<AsyncGenerator<ResponseStreamParseResult>> {
         const { model = ModelType.GPT4oMini } = options || {};
         if (options && ('conversationId' in options !== 'parent' in options)) {
             throw new Error('Both conversationId and parent are required or neither');
@@ -279,11 +287,13 @@ export class ChatGPT implements ChatGPTAPI {
             parent: userMessage.parent,
             conversationId,
             model,
-            instructionMeta
+            instructionMeta,
+            temporary: isTemporary || options?.temporary || false,
         });
+      
+        const body = await this.fetchMessage(payload, options);
 
-        const res = await this.fetchMessage(payload, options);
-        return this.parseStream(res, userMessage, conversationId);
+        return this.parseStream(body, userMessage, conversationId);
     }
 
     public async recreateMessage(message: string, options: ChatGPTRecreateMessageOptions): Promise<AsyncGenerator<ResponseStreamParseResult>>{
@@ -310,8 +320,8 @@ export class ChatGPT implements ChatGPTAPI {
             model
         });
 
-        const res = await this.fetchMessage(payload, options);
-        return this.parseStream(res, userMessage, options.conversationId);
+        const body = await this.fetchMessage(payload, options);
+        return this.parseStream(body, userMessage, options.conversationId);
     }
 
     public async uploadFile(buffer: Uint8Array, filename: string) {

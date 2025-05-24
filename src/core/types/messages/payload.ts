@@ -15,6 +15,7 @@ export interface BaseMessagePayload {
         plugin_ids?:    null;
     };
     supported_encodings:    string[]; // ['v1'] indicate the version of the encoding
+    
 }
 
 export interface CreateMessagePayload extends BaseMessagePayload {

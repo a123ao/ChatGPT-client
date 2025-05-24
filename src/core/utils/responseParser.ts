@@ -114,7 +114,7 @@ export class ResponseStreamParser {
                         }
                     }
                     inProgress = false;
-                } else if (inProgress && progressingMessage && typeof parsedData.v === 'string') {
+                } else if (progressingMessage && typeof parsedData.v === 'string') {
                     progressingMessage.message.content.parts![0] += parsedData.v;
                     yield { meta: null, part: parsedData.v };
                 }
@@ -122,7 +122,6 @@ export class ResponseStreamParser {
                 if (err instanceof Error) {
                     console.error('Error parsing stream:', err.message);
                 }
-                console.log(data);
             }
         }
 
